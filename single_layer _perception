@@ -1,0 +1,68 @@
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+# Step 1: Initialize our Input Vector (X) and Target Labels (Y)
+# Inputs represent 2 security sensors. Targets represent the AND logic gate lockdown requirement.
+X_train = torch.tensor([[0.0, 0.0], 
+                        [0.0, 1.0], 
+                        [1.0, 0.0], 
+                        [1.0, 1.0]], dtype=torch.float32)
+
+Y_train = torch.tensor([[0.0], 
+                        [0.0], 
+                        [0.0], 
+                        [1.0]], dtype=torch.float32)
+
+# Step 2: Build the Network Structure inheriting from nn.Module
+class PerceptronCell(nn.Module):
+    def __init__(self):
+        super(PerceptronCell, self).__init__()
+        # nn.Linear automatically instantiates 2 weights and 1 bias for our 2 input features
+        self.linear_layer = nn.Linear(in_features=2, out_features=1)
+        self.activation = nn.Sigmoid()
+        
+    def forward(self, x):
+        # The Forward Pass: Compute the logit (z), then squash it with Sigmoid (σ)
+        z = self.linear_layer(x)
+        y_hat = self.activation(z)
+        return y_hat
+
+# Instantiate our model hardware
+model = PerceptronCell()
+
+# Step 3: Choose our Loss Function scorecard and our Optimizer engine
+loss_criterion = nn.BCELoss()  # Binary Cross-Entropy Loss for 0/1 classification
+optimizer = optim.SGD(model.parameters(), lr=0.5)  # SGD with a bold learning rate of 0.5
+
+print("--- Launching Perimeter Override Training Sequence ---")
+
+# Step 4: Run the Optimization Loop
+for epoch in range(120):
+    # 1. Forward Pass: Get the network's current predictions
+    predictions = model(X_train)
+    
+    # 2. Evaluate Performance: Calculate the current loss score
+    loss_value = loss_criterion(predictions, Y_train)
+    
+    # 3. Clean the Slate: Clear out cached gradients from the previous iteration
+    optimizer.zero_grad()
+    
+    # 4. Backpropagation: Calculate the gradients using the calculus chain rule
+    loss_value.backward()
+    
+    # 5. Optimize parameters: Take a step down the gradient slope to update weights and biases
+    optimizer.step()
+    
+    if (epoch + 1) % 30 == 0:
+        print(f"Epoch [{epoch+1}/120] | Current Loss Value: {loss_value.item():.4f}")
+
+# Step 5: Pure Inference Verification (Evaluating without tracking gradients)
+print("\n--- Final System Isolation Test ---")
+with torch.no_grad(): # Shut off the background gradient tracking engine during testing
+    final_outputs = model(X_train)
+    print("Sensor Inputs [x1, x2] -> Model Probability Score -> Hard System Decision")
+    for i in range(len(X_train)):
+        prob = final_outputs[i].item()
+        decision = 1 if prob >= 0.5 else 0
+        print(f"       {X_train[i].tolist()}        ->          {prob:.4f}          ->          {decision}")
